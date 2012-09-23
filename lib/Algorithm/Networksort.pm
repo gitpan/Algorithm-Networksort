@@ -1,14 +1,19 @@
 package Algorithm::Networksort;
 
 use 5.008003;
-use warnings;
-use vars qw(@ISA $VERSION $flag_internal %EXPORT_TAGS @EXPORT_OK);
 
-use strict;
 use integer;
 use Carp;
+use Exporter;
+use vars qw(@ISA %EXPORT_TAGS @EXPORT_OK);
+use strict;
+use warnings;
 
-require Exporter;
+#
+# Three # for "I am here" messages, four # for variable dumps.
+# Five # for nw_sort tracking.
+#
+#use Smart::Comments q(###);
 
 @ISA = qw(Exporter);
 
@@ -27,8 +32,7 @@ require Exporter;
 
 @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
-$VERSION = '1.20';
-$flag_internal = 0;
+our $VERSION = '1.21';
 
 my %nw_best = (
 	(9,	# R. W. Floyd.
@@ -161,19 +165,12 @@ my %textset = (
 );
 
 #
-# Some forward declarations.
-#
-sub bn_split($$);
-sub bn_merge($$$$);
-sub semijoin($$@);
-
-#
 # @algkeys = nw_algorithms();
 #
 # Return a list algorithm choices. Each one is a valid key
 # for the nw_comparator() algorithm key.
 #
-sub nw_algorithms()
+sub nw_algorithms
 {
 	return keys %algname;
 }
@@ -183,7 +180,7 @@ sub nw_algorithms()
 #
 # Return the text-worthy name of the algorithm, given its key name.
 #
-sub nw_algorithm_name($)
+sub nw_algorithm_name
 {
 	my $alg = shift;
 	return $algname{$alg} if (defined $alg);
@@ -196,7 +193,7 @@ sub nw_algorithm_name($)
 # The function that starts it all.  Return a list of comparators (a
 # two-item list) that will sort an n-item list.
 #
-sub nw_comparators($%)
+sub nw_comparators
 {
 	my $inputs = shift;
 	my %opts = @_;
@@ -253,7 +250,7 @@ sub nw_comparators($%)
 #
 # The ALGOL code was overly dependent on gotos.  This has been changed.
 #
-sub hibbard($)
+sub hibbard
 { 
 	my $inputs = shift;
 	my @comparators;
@@ -279,8 +276,10 @@ sub hibbard($)
 		# Save the comparator pair, and calculate the next
 		# comparator pair.
 		#
+		### hibbard() top of loop:
+		#### @comparators
+		#
 		push @comparators, [$x, $y];
-		print "Top of loop: ", nw_format(\@comparators) if ($flag_internal);
 
 		#
 		# Start with a check of X and Y's respective bits,
@@ -360,7 +359,7 @@ sub hibbard($)
 #
 # The Bose-Nelson algorithm.
 #
-sub bosenelson($)
+sub bosenelson
 {
 	my $inputs = shift;
 
@@ -378,12 +377,16 @@ sub bosenelson($)
 # 'length' variables.  The $i variable merely acts as a starting
 # base, and could easily have been 1 to begin with.
 #
-sub bn_split($$)
+sub bn_split
 {
 	my($i,  $length) = @_;
 	my @comparators = ();
 
-	print "bn_split($i, $length)\n" if ($flag_internal);
+	#
+	### bn_split():
+	#### $i
+	#### $length
+	#
 
 	if ($length >= 2)
 	{
@@ -393,7 +396,11 @@ sub bn_split($$)
 		push @comparators, bn_split($i + $mid, $length - $mid);
 		push @comparators, bn_merge($i, $mid, $i + $mid, $length - $mid);
 	}
-	print "bn_split($i, $length) returns ", nw_format(\@comparators), "\n\n" if ($flag_internal);
+
+	#
+	### bn_split() returns
+	#### @comparators
+	#
 	return @comparators;
 }
 
@@ -407,13 +414,18 @@ sub bn_split($$)
 # lengths of the ranges.  The $i and $j variables merely act as
 # starting bases.
 #
-sub bn_merge($$$$)
+sub bn_merge
 {
 	my($i, $length_i, $j, $length_j) = @_;
 	my @comparators = ();
 
-	print "bn_merge($i, $length_i, $j, $length_j)\n" if ($flag_internal);
-
+	#
+	### bn_merge():
+	#### $i
+	#### $length_i
+	#### $j
+	#### $length_j
+	#
 	if ($length_i == 1 && $length_j == 1)
 	{
 		push @comparators, [$i, $j];
@@ -438,7 +450,10 @@ sub bn_merge($$$$)
 		push @comparators, bn_merge($i + $i_mid, $length_i - $i_mid, $j, $j_mid);
 	}
 
-	print "bn_merge($i, $length_i, $j, $length_j) returns ", nw_format(\@comparators), "\n\n" if ($flag_internal);
+	#
+	### bn_merge() returns
+	#### @comparators
+	#
 	return @comparators;
 }
 
@@ -450,7 +465,7 @@ sub bn_merge($$$$)
 #
 # Batcher's sort as laid out in Knuth, Sorting and Searching, algorithm 5.2.2M.
 #
-sub batcher($)
+sub batcher
 {
 	my $inputs = shift;
 	my @network;
@@ -500,10 +515,15 @@ sub batcher($)
 # This function is for testing purposes only, interpreting sorting
 # pairs ad hoc in an interpreted language is going to be very slow.
 #
-sub nw_sort($$)
+sub nw_sort
 {
 	my($network, $array) = @_;
 
+	#
+	### nw_sort():
+	#### $network
+	#### $array
+	#
 	foreach my $comparator (@$network)
 	{
 		my($left, $right) = @$comparator;
@@ -513,10 +533,11 @@ sub nw_sort($$)
 			@$array[$left, $right] = @$array[$right, $left];
 		}
 
-		if ($flag_internal) {foreach my $elem (@$array){print $elem;} print "  ";}
+		#
+		##### @$array
+		#
 	}
 
-	print "\n" if ($flag_internal);
 	return $array;
 }
 
@@ -526,7 +547,7 @@ sub nw_sort($$)
 # Return a string that represents the comparators.  Default format is
 # an array of arrays, in standard perl form
 #
-sub nw_format($;$$$)
+sub nw_format
 {
 	my($network, $cmp_format, $swap_format, $index_base) = @_;
 	my $string = '';
@@ -571,7 +592,7 @@ sub nw_format($;$$$)
 # in a single column.  This makes it easier for the nw_graph routines to
 # render a visual representation of the sorting network.
 #
-sub nw_group($$;%)
+sub nw_group
 {
 	my $network = shift;
 	my $inputs = shift;
@@ -635,7 +656,7 @@ sub nw_group($$;%)
 # Sets the colors for the graphical format of the sorting network.
 # Returns a hash of the resulting set.
 #
-sub nw_color(%)
+sub nw_color
 {
 	my %color_opts = @_;
 
@@ -647,16 +668,49 @@ sub nw_color(%)
 }
 
 #
+# %svg_colorset = svg_color();
+#
+# Return the full list of colors used to make the SVG output.
+#
+# The default color for drawing is the foreground color.  Use
+# it to fill in any unspecified colors in our local colorset.
+#
+sub svg_color
+{
+	my $dclr = (defined $colorset{foreground})? $colorset{foreground}: 'black';
+	return map{$_ => (defined $colorset{$_})?
+	    $colorset{$_}:
+	    $dclr} keys %colorset;
+}
+
+sub text_segments
+{
+	my %print_opts = @_;
+
+	return map{$_ => (defined $print_opts{$_})?
+	    $print_opts{$_}:
+	    $textset{$_}} keys %textset;
+}
+
+sub graph_segments
+{
+	my %print_opts = @_;
+
+	return map{$_ => (defined $print_opts{$_})?
+	    $print_opts{$_}:
+	    $graphset{$_}} keys %graphset;
+}
+
+#
 # $string = nw_graph(\@network, $inputs, %options);
 #
 # Returns a string that contains the sorting network in a graphical format.
 #
-sub nw_graph($$;%)
+sub nw_graph
 {
 	my $network = shift;
 	my $inputs = shift;
 	my %print_opts = @_;
-	my %pset;
 
 	if (scalar @$network == 0)
 	{
@@ -667,16 +721,15 @@ sub nw_graph($$;%)
 	#
 	# Text graph by default.
 	#
-	if (!exists $print_opts{graph} or $print_opts{graph} eq "text")
-	{
-		%pset = map{$_ => (defined $print_opts{$_})? $print_opts{$_}: $textset{$_}} keys %textset;
-		return nw_text_graph($network, $inputs, %pset);
-	}
+	return nw_text_graph($network, $inputs,
+	    text_segments(%print_opts)) if (!exists $print_opts{graph} or $print_opts{graph} eq "text");
 
-	%pset = map{$_ => (defined $print_opts{$_})? $print_opts{$_}: $graphset{$_}} keys %graphset;
 
-	return nw_svg_graph($network, $inputs, %pset) if ($print_opts{graph} eq "svg");
-	return nw_eps_graph($network, $inputs, %pset) if ($print_opts{graph} eq "eps");
+	return nw_svg_graph($network, $inputs,
+	    graph_segments(%print_opts)) if ($print_opts{graph} eq "svg");
+
+	return nw_eps_graph($network, $inputs,
+	    graph_segments(%print_opts)) if ($print_opts{graph} eq "eps");
 
 	carp "Unknown 'graph' type '" . $print_opts{graph} . "'.\n";
 	return "";
@@ -687,7 +740,7 @@ sub nw_graph($$;%)
 #
 # Returns a string that contains the sorting network in an EPS format.
 #
-sub nw_eps_graph($$%)
+sub nw_eps_graph
 {
 	my $network = shift;
 	my $inputs = shift;
@@ -786,7 +839,7 @@ q(
 # Return a graph of the sorting network in Scalable Vector Graphics.
 # Measurements are in pixels. 0,0 is the upper left corner.
 #
-sub nw_svg_graph($$%)
+sub nw_svg_graph
 {
 	my $network = shift;
 	my $inputs = shift;
@@ -796,12 +849,7 @@ sub nw_svg_graph($$%)
 	my $columns = scalar @node_stack;
 
 
-	#
-	# The default color for drawing is the foreground color.  Use
-	# it to fill in any unspecified colors in our local colorset.
-	#
-	my $dclr = (defined $colorset{foreground})? $colorset{foreground}: 'black';
-	my %clrset = map{$_ => (defined $colorset{$_})? $colorset{$_}: $dclr} keys %colorset;
+	my %clrset = svg_color();
 	my $ns =  (defined $grset{namespace})? $grset{namespace} . ":" : "";
 
 	#
@@ -833,15 +881,10 @@ sub nw_svg_graph($$%)
 		qq(  <${ns}title>$title</${ns}title>\n);
 
 	#
-	# Set up the marker and the input line template.
+	# Set up the input line template.
 	#
 	$string .= qq(  <${ns}defs>\n);
 
-	#
-	# Define input line markers and comparator line marks.
-	#
-	my $refdim = $grset{stroke_width};
-	my $boxdim = 2 * $refdim;
 	my $b_clr = "stroke:$clrset{inputbegin}";
 	my $l_clr = "stroke:$clrset{inputline}";
 	my $e_clr = "stroke:$clrset{inputend}";
@@ -869,7 +912,6 @@ sub nw_svg_graph($$%)
 		qq(style="fill:none; stroke:$clrset{inputline}; stroke-width:$grset{stroke_width}" >\n) .
 		qq(       <${ns}desc>Input line.</${ns}desc>\n) .
 		qq(       <${ns}line x1="$left_margin" y1="0" x2="$right_margin" y2="0" ) . 
-		qq(style="marker-start: url(#inputbeginmark); marker-end: url(#inputendmark)" />\n);
 
 	$string .= qq(    </${ns}g>\n    <!-- Define the comparator lines, which vary in length. -->\n);
 
@@ -939,7 +981,7 @@ sub nw_svg_graph($$%)
 #
 # Return a graph of the sorting network in text.
 #
-sub nw_text_graph($$%)
+sub nw_text_graph
 {
 	my $network = shift;
 	my $inputs = shift;
@@ -1033,7 +1075,7 @@ sub nw_text_graph($$%)
 # negative, in which case the first item of the new list is made from the
 # leftover elements from the front of the list.
 #
-sub semijoin($$@)
+sub semijoin
 {
 	my($jstr, $itemcount, @oldlist) = @_;
 	my($idx);
