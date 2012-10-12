@@ -31,6 +31,7 @@ t/bn14.t
 t/bn15.t
 t/bn16.t
 t/bn17.t
+t/bubble0407.t
 t/hibbard04.t
 t/hibbard10.t
 t/hibbard11.t
@@ -41,6 +42,7 @@ t/hibbard15.t
 t/hibbard16.t
 t/hibbard17.t
 t/pod.t
+t/svg.t
 t/zero_one.pl
 eg/algtest.pl
 eg/bruteforce.pl

@@ -13,7 +13,7 @@ use warnings;
 # Three # for "I am here" messages, four # for variable dumps.
 # Five # for nw_sort tracking.
 #
-#use Smart::Comments q(###);
+#use Smart::Comments q(####);
 
 @ISA = qw(Exporter);
 
@@ -32,7 +32,7 @@ use warnings;
 
 @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
-our $VERSION = '1.22';
+our $VERSION = '1.23';
 
 my %nw_best = (
 	(9,	# R. W. Floyd.
@@ -114,10 +114,11 @@ my %nw_best = (
 # Names for the algorithm keys.
 #
 my %algname = (
-	bosenelson => "Bose-Nelson",
+	bosenelson => "Bose-Nelson Sort",
 	batcher => "Batcher's Mergesort",
-	hibbard => "Hibbard",
-	best => "Best Known",
+	hibbard => "Hibbard's Sort",
+	best => "Best Known Sort",
+	bubble => "Bubble Sort",
 );
 
 #
@@ -199,6 +200,12 @@ sub nw_comparators
 	my %opts = @_;
 	my @comparators;
 
+	#
+	### Generating the comparators...
+	#
+	#### $inputs
+	#### %opts
+	#
 	return () if ($inputs < 2);
 	$opts{algorithm} = 'bosenelson' unless (defined $opts{algorithm});
 	$opts{grouping} = 'none' unless (defined $opts{grouping});
@@ -219,6 +226,7 @@ sub nw_comparators
 	@comparators = bosenelson($inputs) if ($opts{algorithm} eq 'bosenelson');
 	@comparators = hibbard($inputs) if ($opts{algorithm} eq 'hibbard');
 	@comparators = batcher($inputs) if ($opts{algorithm} eq 'batcher');
+	@comparators = bubble($inputs) if ($opts{algorithm} eq 'bubble');
 
 	#
 	# Instead of using the list as provided by the algorithms,
@@ -500,6 +508,26 @@ sub batcher
 			$r = $p;
 		}
 		$p >>= 1;
+	}
+
+	return @network;
+}
+
+#
+# @network = bubble($inputs);
+#
+# Simple bubble sort network, only for comparison purposes.
+#
+sub bubble
+{
+	my $inputs = shift;
+	my @network;
+
+	return () if ($inputs < 2);
+
+	for my $j (reverse 0 .. $inputs - 1)
+	{
+		push @network, [$_, $_ + 1] for (0 .. $j - 1);
 	}
 
 	return @network;
@@ -1215,6 +1243,12 @@ that in its usual form (for example, as described in Knuth) it can handle
 a variety of inputs. But while sorting it always generates an identical set of
 comparison pairs per array size, which lends itself to sorting networks.
 
+=item 'bubble'
+
+Use a naive bubble-sort/insertion-sort algorithm. Since this algorithm
+produces more comparison pairs than the other algorithms, it is only
+useful for illustrative purposes.
+
 =item 'best'
 
 For some inputs, sorting networks have been discovered that are more efficient
@@ -1297,35 +1331,35 @@ Sets the colors of the svg graph parts (eps support will come later).  The parts
 
 =item inputbegin
 
-	Opening of input line.
+Opening of input line.
 
 =item inputline
 
-	The input line.
+The input line.
 
 =item inputend
 
-	Closing of the input line.
+Closing of the input line.
 
 =item compbegin
 
-	Opening of the comparator.
+Opening of the comparator.
 
 =item compline
 
-	The comparator line.
+The comparator line.
 
 =item compend
 
-	Closing of the comparator line.
+Closing of the comparator line.
 
 =item foreground
 
-	Default color for the graph as a whole.
+Default color for the graph as a whole.
 
 =item background
 
-	Color of the background.  Currently unimplemented in SVG.
+Color of the background.  Currently unimplemented in SVG.
 
 =back
 
