@@ -1,16 +1,18 @@
 use strict;
-
-use Test::More tests => 2;
-
+use Test::More tests => 1;
 use Algorithm::Networksort qw(:all);
 
 require "t/zero_one.pl";
 
-my $algorithm = 'bubble';
+my $author_testing = $ENV{AUTHOR_TESTING};
+my $algorithm = 'best';
 my $name = nw_algorithm_name($algorithm);
+my $inputs = 22;
 
-for my $inputs (4,7)
+SKIP:
 {
+	skip "Long test meant for the author's eyes", 1 unless ($author_testing);
+
 	my @network = nw_comparators($inputs, algorithm=>$algorithm);
 	my $status = zero_one($inputs, \@network);
 	is($status, "pass", "$name, N=$inputs, $status");

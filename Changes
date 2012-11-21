@@ -1,5 +1,56 @@
 Revision history for Perl extension Algorithm::Networksort.
 
+1.30
+	Tue Nov 20 2012
+	- Updated the references in the POD documentation.
+	- Time to upload to CPAN.
+	Mon Nov 19 2012
+	- Update the version number everywhere.
+	- Update documentation to make sure 'bitonic' is mentioned.
+	- Got svg.t to work correctly in systems that don't have
+	  Test::XML::Easy installed.
+	- Heavily update README to cover testing, and Doug Hoyte's
+	  contributions.
+	Sun Nov 18 2012
+	- Consolidated the "algorithm" test files into one file,
+	  abecedarian.t. Now that we're using $ENV{AUTHOR_TESTING},
+	  we can consolidate test files without worrying about
+	  tests timing out on CPAN testers' machines.
+	- Simplified code in the "best" test files.
+	Sat Nov 17 2012
+	- Upgrage tests to use the is() function from Test::More.
+	Fri Nov 16 2012
+	- Fixed the code in Build.PL that would set $ENV{AUTHOR_TESTING}.
+	  All tests, even the lengthy ones, are now run when using
+	     "Build test --Testlong".
+	Tue Nov 13 2012
+	- Long-running tests now check for $ENV{AUTHOR_TESTING} = 1,
+	  and skip if it doesn't.
+	Tue Nov 6 2012
+	- Worked on bitonic() code. Use existing pack/unpack code to
+	  determine power-of-two value, this replaces the
+	  greater_power_of_2_less_than() function.
+	- Made loop a little more perlish by using the '..' operator.
+	- Added 'bitonic' to the keyword list.
+	- Added a get_options parameter in Build.PL. Looking towards
+	  an option to automatically skip long-running tests in
+	  non-development situations.
+	Tue Oct 30 2012
+	- Fall-back algorithm for 'best' option is not Batcher's Merge
+	  Exchange algorithm instead of Bose-Nelson.
+	- Checks for $inputs < 2 in the algorithm functions are pointless
+	  since the calling, exported function already checks for it.
+	- "use integer" means that int($n/2) may be written more simply
+	  as $n/2.
+	Sat Oct 27 2012
+	- Added two new 'best' networks for input sizes 18 and 22,
+	  discovered by Sherenaz Waleed Al-Haj Baddar and submited
+	  by Doug Hoyte.
+	- Added the bitonic() code and test file as provided by Doug Hoyte.
+	Thu Oct 25 2012
+	- New function nw_sort_stats() to return information about
+	  sorting network exchange counts (based on Doug Hoyte's
+	  idea) and other future ideas.
 1.24
 	Sun Oct 14 2012
 	- Emergency change to svg.t -- I'm doing something wrong in

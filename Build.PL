@@ -2,12 +2,35 @@ use Module::Build;
 use strict;
 use warnings;
 
-my $build = Module::Build->new(
+my $class = Module::Build->subclass(
+	class => "Module::Build::Custom",
+	code => <<'SUBCLASS' );
+
+sub ACTION_test {
+	my $self = shift;
+
+	#
+	# Some test files take a long time to run. To save
+	# the testers some processing time, skip those tests
+	# by default (this is determined within the individual
+	# test files).  Use the --Testlong option to set the
+	# AUTHOR_TESTING environment variable, which the
+	# longer-running test files will check for.
+	#
+	my %args = $self->args;
+
+	$ENV{AUTHOR_TESTING} = 1 if (exists $args{Testlong});
+	$self->SUPER::ACTION_test;
+}
+SUBCLASS
+
+#my $build = Module::Build->new(
+my $build = $class->new(
 	module_name => 'Algorithm::Networksort',
 
 	dist_abstract => 'Create Sorting Networks',
 	dist_author => ['John M. Gamble <jgamble@cpan.org>'],
-	dist_version => '1.24',  
+	dist_version => '1.30',  
 
 	requires => {
 		perl=> '5.8.3'
@@ -18,7 +41,7 @@ my $build = Module::Build->new(
 	},
 
 	build_requires => {
-		'Test::Simple' => 0
+		'Test::More' => 0,
 	},
 
 	license => 'perl',
@@ -29,15 +52,10 @@ my $build = Module::Build->new(
 
 	meta_merge => {
 		keywords => [qw(sort sorting-network
-			batcher hibbard bose-nelson)],
+			batcher bitonic hibbard bose-nelson bubble)],
 
 		resources => {
 			repository => 'git://github.com/jgamble/Algorithm-Networksort.git',
-#			repository => {
-#				url => 'git://github.com/jgamble/Algorithm-Networksort.git',
-#				web => 'https://github.com/jgamble/Algorithm-Networksort',
-#				type => 'git',
-#			},
 		},
 	},
 

@@ -1,27 +1,19 @@
-# Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl best01.t'
-
-use Test::Simple tests => 1;
-
+use strict;
+use Test::More tests => 1;
 use Algorithm::Networksort qw(:all);
 
 require "t/zero_one.pl";
 
+my $author_testing = $ENV{AUTHOR_TESTING};
 my $algorithm = 'best';
-my @network;
-my $status;
+my $name = nw_algorithm_name($algorithm);
+my $inputs = 16;
 
-for my $inputs (16..16)
+SKIP:
 {
-	@network = nw_comparators($inputs, algorithm=>$algorithm);
-	$status = zero_one($inputs, \@network);
-	if ($status eq "pass")
-	{
-		ok(1, "$algorithm, N=$inputs");
-	}
-	else
-	{
-		ok(0, "$algorithm, N=$inputs, $status");
-	}
-}
+	skip "Long test meant for the author's eyes", 1 unless ($author_testing);
 
+	my @network = nw_comparators($inputs, algorithm=>$algorithm);
+	my $status = zero_one($inputs, \@network);
+	is($status, "pass", "$name, N=$inputs, $status");
+}

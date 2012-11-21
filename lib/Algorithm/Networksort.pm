@@ -32,7 +32,7 @@ use warnings;
 
 @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
-our $VERSION = '1.23';
+our $VERSION = '1.30';
 
 my %nw_best = (
 	(9,	# R. W. Floyd.
@@ -107,7 +107,39 @@ my %nw_best = (
 	  [7,11], [1,2], [4,8], [1,4], [7,13], [2,8], [11,14],
 	  [2,4], [5,6], [9,10], [11,13], [3,8], [7,12],
 	  [6,8], [10,12], [3,5], [7,9],
-	  [3,4], [5,6], [7,8], [9,10], [11,12], [6,7], [8,9]])
+	  [3,4], [5,6], [7,8], [9,10], [11,12], [6,7], [8,9]]),
+
+	(18,    # Baddar's PHD thesis, chapter 6
+                # Fewest stages but 2 comparators more than 'batcher'
+	 [[0,1], [2,3], [4,5], [6,7], [8,9], [10,11], [12,13], [14,15], [16,17],
+	  [0,2], [1,3], [4,6], [5,7], [8,10], [9,11], [12,17], [13,14], [15,16],
+	  [0,4], [1,5], [2,6], [3,7], [9,10], [8,12], [11,16], [13,15], [14,17],
+	  [7,16], [6,17], [3,5], [10,14], [11,12], [9,15], [2,4], [1,13], [0,8],
+	  [16,17], [7,14], [5,12], [3,15], [6,13], [4,10], [2,11], [8,9], [0,1],
+	  [1,8], [14,16], [6,9], [7,13], [5,11], [3,10], [4,15], [4,8], [14,15],
+	  [5,9], [7,11], [1,2], [12,16], [3,6], [10,13], [5,8], [11,14], [2,3],
+	  [12,13], [6,7], [9,10], [7,9], [3,5], [12,14], [2,4], [13,15], [6,8],
+	  [10,11], [13,14], [11,12], [9,10], [7,8], [5,6], [3,4], [12,13],
+	  [10,11], [8,9], [6,7], [4,5]]),
+
+	(22,	# Baddar's PHD thesis, chapter 7
+		# Fewest stages but 2 comparators more than 'batcher'
+	 [[0,1], [2,3], [4,5], [6,7], [8,9], [10,11], [12,13], [14,15], [16,17],
+	  [18,19], [20,21], [2,4], [1,3], [0,5], [6,8], [7,9], [10,12], [11,13],
+	  [14,16], [15,17], [18,20], [19,21], [6,10], [7,11], [8,12], [9,13],
+	  [14,18], [15,19], [16,20], [17,21], [3,5], [1,4], [0,2], [9,17],
+	  [7,15], [11,19], [8,16], [3,12], [0,10], [1,18], [5,20], [13,21],
+	  [6,14], [2,4], [0,7], [17,20], [3,15], [9,18], [2,11], [4,16], [5,10],
+	  [1,8], [12,19], [13,14], [20,21], [0,6], [3,8], [12,18], [2,13],
+	  [14,16], [5,9], [10,15], [4,7], [11,17], [16,20], [18,19], [15,17],
+	  [12,14], [10,11], [7,9], [8,13], [4,5], [1,3], [2,6], [19,20],
+	  [16,17], [15,18], [11,14], [9,13], [10,12], [7,8], [3,5], [4,6],
+	  [1,2], [18,19], [14,16], [13,15], [11,12], [8,9], [5,10], [6,7],
+	  [2,3], [17,19], [16,18], [14,15], [12,13], [9,11], [8,10], [5,7],
+	  [3,6], [2,4], [17,18], [15,16], [13,14], [11,12], [9,10], [7,8],
+	  [5,6], [3,4], [16,17], [14,15], [12,13], [10,11], [8,9], [6,7],
+	  [4,5]]),
+
 );
 
 #
@@ -119,6 +151,7 @@ my %algname = (
 	hibbard => "Hibbard's Sort",
 	best => "Best Known Sort",
 	bubble => "Bubble Sort",
+	bitonic => "Bitonic Sort",
 );
 
 #
@@ -166,6 +199,12 @@ my %textset = (
 );
 
 #
+# Variables to track sorting statistics
+#
+my $swaps = 0;
+
+
+#
 # @algkeys = nw_algorithms();
 #
 # Return a list algorithm choices. Each one is a valid key
@@ -207,6 +246,8 @@ sub nw_comparators
 	#### %opts
 	#
 	return () if ($inputs < 2);
+	return ([0, 1]) if ($inputs == 2);
+
 	$opts{algorithm} = 'bosenelson' unless (defined $opts{algorithm});
 	$opts{grouping} = 'none' unless (defined $opts{grouping});
 
@@ -219,13 +260,14 @@ sub nw_comparators
 	if ($opts{algorithm} eq 'best')
 	{
 		return @{$nw_best{$inputs}} if (exists $nw_best{$inputs});
-		carp "No 'best' network know for N = $inputs.  Using $algname{bosenelson}";
-		return bosenelson($inputs);
+		carp "No 'best' network know for N = $inputs.  Using $algname{batcher}";
+		return batcher($inputs);
 	}
 
 	@comparators = bosenelson($inputs) if ($opts{algorithm} eq 'bosenelson');
 	@comparators = hibbard($inputs) if ($opts{algorithm} eq 'hibbard');
 	@comparators = batcher($inputs) if ($opts{algorithm} eq 'batcher');
+	@comparators = bitonic($inputs) if ($opts{algorithm} eq 'bitonic');
 	@comparators = bubble($inputs) if ($opts{algorithm} eq 'bubble');
 
 	#
@@ -265,12 +307,14 @@ sub hibbard
 	my($bit, $xbit, $ybit);
 
 	#
-	# $lastbit = ceiling(log2($inputs - 1)); but we'll
+	# $t = ceiling(log2($inputs - 1)); but we'll
 	# find it using the length of the bitstring.
 	#
-	my $lastbit = unpack("B32", pack("N", $inputs - 1));
-	$lastbit =~ s/^0+//;
-	$lastbit = 1 << (length $lastbit);
+	my $t = unpack("B32", pack("N", $inputs - 1));
+	$t =~ s/^0+//;
+	$t = length $t;
+
+	my $lastbit = 1 << $t;
 
 	#
 	# $x and $y are the comparator endpoints.
@@ -370,8 +414,6 @@ sub hibbard
 sub bosenelson
 {
 	my $inputs = shift;
-
-	return () if ($inputs < 2);
 
 	return bn_split(0, $inputs);
 }
@@ -478,8 +520,6 @@ sub batcher
 	my $inputs = shift;
 	my @network;
 
-	return () if ($inputs < 2);
-
 	#
 	# $t = ceiling(log2($inputs)); but we'll
 	# find it using the length of the bitstring.
@@ -498,7 +538,7 @@ sub batcher
 
 		while ($d > 0)
 		{
-			for (my $i = 0; $i < $inputs - $d; $i++)
+			for my $i (0 .. $inputs - $d - 1)
 			{
 				push @network, [$i, $i + $d] if (($i & $p) == $r);
 			}
@@ -513,6 +553,95 @@ sub batcher
 	return @network;
 }
 
+
+
+#
+# @network = bitonic($inputs);
+#
+# Return a list of two-element lists that comprise the comparators of a
+# sorting network.
+#
+# Batcher's Bitonic sort as described here:
+# http://www.iti.fh-flensburg.de/lang/algorithmen/sortieren/bitonic/oddn.htm
+#
+sub bitonic
+{
+	my $inputs = shift;
+	my @network;
+
+	my ($sort, $merge);
+
+	$sort = sub {
+		my ($lo, $n, $dir) = @_;
+
+		if ($n > 1) {
+			my $m = $n/2;
+			$sort->($lo, $m, !$dir);
+			$sort->($lo + $m, $n - $m, $dir);
+			$merge->($lo, $n, $dir);
+		}
+	};
+
+	$merge = sub {
+		my ($lo, $n, $dir) = @_;
+
+		if ($n > 1) {
+			#
+			# $t = ceiling(log2($n - 1)); but we'll
+			# find it using the length of the bitstring.
+			#
+			my $t = unpack("B32", pack("N", $n - 1));
+			$t =~ s/^0+//;
+			$t = length $t;
+
+			my $m = 1 << ($t - 1);
+
+			for my $i ($lo .. $lo+$n-$m-1)
+			{
+				push @network, ($dir)? [$i, $i+$m]: [$i+$m, $i];
+			}
+
+			$merge->($lo, $m, $dir);
+			$merge->($lo + $m, $n - $m, $dir);
+		}
+	};
+
+	$sort->(0, $inputs, 1);
+
+	return @{ make_network_unidirectional(\@network) };
+}
+
+
+## This function "re-wires" a bi-directional sorting network
+## and turns it into a normal, uni-directional network.
+
+sub make_network_unidirectional
+{
+	my ($network_ref) = @_;
+
+	my @network = @$network_ref;
+
+	foreach my $i (0..$#network) {
+		my $comparator = $network[$i];
+		my ($x, $y) = @$comparator;
+
+		if ($x > $y) {
+			foreach my $j (($i+1)..$#network) {
+				my $j_comparator = $network[$j];
+				my ($j_x, $j_y) = @$j_comparator;
+
+				$j_comparator->[0] = $y if $x == $j_x;
+				$j_comparator->[1] = $y if $x == $j_y;
+				$j_comparator->[0] = $x if $y == $j_x;
+				$j_comparator->[1] = $x if $y == $j_y;
+			}
+			($comparator->[0], $comparator->[1]) = ($comparator->[1], $comparator->[0]);
+		}
+	}
+
+	return \@network;
+}
+
 #
 # @network = bubble($inputs);
 #
@@ -522,8 +651,6 @@ sub bubble
 {
 	my $inputs = shift;
 	my @network;
-
-	return () if ($inputs < 2);
 
 	for my $j (reverse 0 .. $inputs - 1)
 	{
@@ -552,6 +679,12 @@ sub nw_sort
 	#### $network
 	#### $array
 	#
+
+	#
+	# Variable $swaps is a global variable that reports back the
+	# number of exchanges.
+	#
+	$swaps = 0;
 	foreach my $comparator (@$network)
 	{
 		my($left, $right) = @$comparator;
@@ -559,6 +692,7 @@ sub nw_sort
 		if (($$array[$left] <=> $$array[$right]) == 1)
 		{
 			@$array[$left, $right] = @$array[$right, $left];
+			$swaps++;
 		}
 
 		#
@@ -567,6 +701,17 @@ sub nw_sort
 	}
 
 	return $array;
+}
+
+#
+# %sortstats = nw_sort_stats();
+#
+# Return information on the sorting network.
+#
+sub nw_sort_stats
+{
+	return (swaps => $swaps,
+		);
 }
 
 #
@@ -1243,6 +1388,16 @@ that in its usual form (for example, as described in Knuth) it can handle
 a variety of inputs. But while sorting it always generates an identical set of
 comparison pairs per array size, which lends itself to sorting networks.
 
+=item 'bitonic'
+
+Use Batcher's bitonic algorithm. A bitonic sequence is a sequence that
+monotonically increases and then monotonically decreases. The bitonic sort
+algorithm works by recursively splitting sequences into bitonic sequences
+using so-called "half-cleaners". These bitonic sequences are then merged
+into a fully sorted sequence. Bitonic sort is a very efficient sort and
+is especially suited for implementations that can exploit network
+parallelism.
+
 =item 'bubble'
 
 Use a naive bubble-sort/insertion-sort algorithm. Since this algorithm
@@ -1261,8 +1416,8 @@ other networks with an equally low comparator count but with a different
 arrangement are ignored.
 
 Currently more efficient sorting networks have been discoverd for inputs of
-nine through sixteen. If you choose 'best' outside of this range the module
-will fall back to Bose-Nelson.
+nine through sixteen, eighteen, and twenty-two. If you choose 'best' outside
+of this range the module will fall back to Batcher's Merge Exchange algorithm.
 
 =back
 
@@ -1559,6 +1714,35 @@ This function uses the C<< <=> >> operator for comparisons.
     nw_sort(\@network, \@digits);
     print join(", ", @digits);
 
+=head3 nw_sort_stats()
+
+Return statistics on the last nw_sort() call. Currently only "swaps",
+a count of the number of exchanges, is returned.
+
+    my(@d, %nw_stats);
+    my @digits = (1, 8, 3, 0, 4, 7, 2, 5, 9, 6);
+    my @network_batcher = nw_comparators(scalar @digits,
+            algorithm => 'batcher');
+    my @network_bn = nw_comparators(scalar @digits,
+            algorithm => 'bosenelson');
+
+    @d = @digits;
+    nw_sort(\@network_batcher, \@d);
+    %nw_stats = nw_sort_stats();
+    print "The Batcher Merge-Exchange network took ",
+        $nw_stats{swaps}, " exchanges to sort the array."
+
+    @d = @digits;
+    nw_sort(\@network_bn, \@d);
+    %nw_stats = nw_sort_stats();
+    print "The Bose-Nelson network took ",
+        $nw_stats{swaps}, " exchanges to sort the array."
+
+=head1 ACKNOWLEDGMENTS
+
+Doug Hoyte provided the code for the bitonic sort algorithm and the bubble sort,
+and the idea for what became the L<nw_sort_stats()> function.
+
 =head1 SEE ALSO
 
 =head2 Bose and Nelson's algorithm.
@@ -1610,14 +1794,35 @@ T. N. Hibbard, "A Simple Sorting Algorithm", Journal of the ACM Vol. 10, 1963, p
 Code for Kenneth Batcher's Merge Exchange algorithm was derived from Knuth's
 The Art of Computer Programming, Vol. 3, section 5.2.2.
 
-Batcher has written two other sorting algorithms that can generate network
-sorting pairs, the "Odd-Even" algorithm and the "Bitonic" algorithm. His
-web site (L<http://www.cs.kent.edu/~batcher/>) lists his publications, including:
+=back
+
+=head2 Batcher's Bitonic algorithm
+
+=over 3
+
+=item
 
 Kenneth Batcher, "Sorting Networks and their Applications", Proc. of the
-AFIPS Spring Joint Computing Conf., Vol. 32, 1968, pp. 307-3114.
+AFIPS Spring Joint Computing Conf., Vol. 32, 1968, pp. 307-3114. A PDF of
+this article may be found at L<http://www.cs.kent.edu/~batcher/sort.pdf>.
 
-A PDF of this article may be found at L<http://www.cs.kent.edu/~batcher/sort.pdf>.
+The paper discusses both the Odd-Even Merge algorithm and the Bitonic algorithm.
+
+=item
+
+Dr. Hans Werner Lang has written a detailed discussion of the bitonic
+sort algorithm here:
+L<http://www.iti.fh-flensburg.de/lang/algorithmen/sortieren/bitonic/bitonicen.htm>
+
+=item
+
+T. H. Cormen, E. E. Leiserson, R. L. Rivest, Introduction to Algorithms,
+first edition, McGraw-Hill, 1990, section 28.3.
+
+=item
+
+T. H. Cormen, E. E. Leiserson, R. L. Rivest, C. Stein, Introduction to Algorithms,
+2nd edition, McGraw-Hill, 2001, section 27.3.
 
 =back
 
@@ -1635,6 +1840,12 @@ networks with nine inputs", L<http://www.eng.unt.edu/ian/pubs/snverify.pdf>.
 The Evolving Non-Determinism (END) algorithm has found more efficient
 sorting networks: L<http://www.cs.brandeis.edu/~hugues/sorting_networks.html>.
 
+=item
+
+The 18 and 22 input networks found by Sherenaz Waleed Al-Haj Baddar
+are described in his paper "Finding Better Sorting Networks" at
+L<http://etd.ohiolink.edu/view.cgi?acc_num=kent1239814529>.
+
 =back
 
 =head2 Algorithm discussion
@@ -1649,8 +1860,8 @@ Redwood City, CA, 1998.
 
 =item
 
-T. H. Cormen, E. E. Leiserson, R. L. Rivest, Introduction to Algorithms,
-McGraw-Hill, 1990.
+Kenneth Batcher's web site (L<http://www.cs.kent.edu/~batcher/>) lists
+his publications, including his paper listed above.
 
 =back
 
